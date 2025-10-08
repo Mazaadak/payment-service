@@ -11,3 +11,11 @@ management:
       exposure:
         include: "*"
 
+stripe:
+  api:
+    secret-key: sk_test_51SE48THRWMzXfAFedGPQ02RwkGnexkJXFeFi6ckainh6NN2dEcGt1if7C8ZqHeRBTbiUmJCaPBibr6nQsgLp5ena00X7YwcW11
+    client-id: ca_TAak0BWyIkV04HPOSCWKapGXV2D3VEPU
+
+
+server:
+  port: 18081
