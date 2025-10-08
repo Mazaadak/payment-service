@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: "payment"
+
+  profiles:
+    active: "default"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
