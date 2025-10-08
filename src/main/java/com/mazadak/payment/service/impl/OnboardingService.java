@@ -1,22 +1,29 @@
 package com.mazadak.payment.service.impl;
 
 import com.mazadak.payment.constant.OnboardingConstants;
+import com.mazadak.payment.exception.StripeOAuthException;
 import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.net.OAuth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class OnboardingService {
 
     @Value("${stripe.api.client-id}")
@@ -30,7 +37,6 @@ public class OnboardingService {
     public void init() {
         Stripe.apiKey = stripeSecretKey;
     }
-
 
 
     public String generateOnboardingUrl(String sellerId) {
@@ -48,5 +54,42 @@ public class OnboardingService {
 
         return url;
     }
+
+    public String handleOAuthCallback(String authorizationCode, String sellerId) {
+
+        log.info("Processing OAuth callback for seller: {}", sellerId);
+
+        /// Apply Server to Server communication -> to get the stripe account id
+        String connectedAccountId = exchangeCodeForAccountId(authorizationCode, sellerId);
+
+        ///TODO: Store the stripe account id in the seller service
+//        storeStripeAccount(sellerId, connectedAccountId);
+
+        log.info("Successfully stored Stripe Account: : {}", connectedAccountId);
+
+        return connectedAccountId;
+    }
+
+
+    private String exchangeCodeForAccountId(String authorizationCode, String sellerId) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("grant_type", "authorization_code");
+        params.put("code", authorizationCode);
+
+        try {
+            /// Communicate with stripe oauth api to extract the actual account id
+            var response = OAuth.token(params, null);
+            String connectedAccountId = response.getStripeUserId();
+
+            if (connectedAccountId == null)
+                throw new StripeOAuthException("Could not retrieve Stripe User ID from OAuth response", sellerId);
+
+            return connectedAccountId;
+        } catch (StripeException e) {
+            throw new StripeOAuthException("Stripe OAuth failed: " + e.getMessage(), sellerId, e);
+        }
+    }
+
+
 
 }

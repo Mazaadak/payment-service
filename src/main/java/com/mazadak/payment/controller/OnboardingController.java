@@ -64,4 +64,19 @@ public class OnboardingController {
                     )) @org.springframework.web.bind.annotation.RequestBody Map<String, String> payload) {
         return ResponseEntity.ok(Map.of("onboardingUrl", onboardingService.generateOnboardingUrl(payload.get("sellerId"))));
     }
+
+
+    @GetMapping("/oauth/callback")
+    public String getOAuthCallback(
+            @RequestParam("code") String authorizationCode,
+            @RequestParam("state") String sellerId) {
+
+        String connectedAccountId = onboardingService.handleOAuthCallback(authorizationCode, sellerId);
+
+        return "<h1>Stripe Account Connected</h1><p>accountId: (" + connectedAccountId + ")</p>";
+    }
+
+
+
+
 }
