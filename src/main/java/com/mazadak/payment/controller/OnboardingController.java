@@ -66,6 +66,22 @@ public class OnboardingController {
     }
 
 
+    @Operation(summary = "Handle Stripe OAuth Callback",
+            description = "Handles the callback from Stripe after a seller completes the OAuth process\n " +
+                    "Exchanges the authorization code for an access token and connects the Stripe account to the seller")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Stripe account id created successfully",
+                    content = @Content(mediaType = "text/html",
+                            examples = @ExampleObject(value = "<h1>Stripe Account Connected</h1><p>accountId: (acct_12345)</p>"))),
+            @ApiResponse(responseCode = "400", description = "Invalid authorization code or state",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = @ExampleObject(value = "{\"error\": \"Invalid authorization code or seller ID\"}"))),
+            @ApiResponse(responseCode = "500", description = "Internal server error during OAuth token exchange",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = @ExampleObject(value = "{\"error\": \"Failed to connect Stripe account\"}")))
+    })
     @GetMapping("/oauth/callback")
     public String getOAuthCallback(
             @RequestParam("code") String authorizationCode,
