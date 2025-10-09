@@ -40,10 +40,18 @@ public class StripePaymentController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get Stripe Account ID for a Seller",
+            description = "Retrieves the persisted Stripe Account ID for a given seller ID. This is used to identify the destination account for payments.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Stripe Account ID retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Seller ID not found or no Stripe account is associated with it"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+
+
     @GetMapping("/get-stripe-account-id")
     public ResponseEntity<Map<String,Object>> getStripeAccountId(@RequestParam String sellerId) {
         String stripeAccountId = paymentService.getStripeAccountId(sellerId);
         return ResponseEntity.ok(Map.of("stripeAccountId", stripeAccountId));
     }
-
 }
