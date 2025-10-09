@@ -1,14 +1,12 @@
 package com.mazadak.payment.exception.handler;
 
-import com.mazadak.payment.exception.PaymentProcessingException;
-import com.mazadak.payment.exception.SellerServiceException;
-import com.mazadak.payment.exception.StripeAccountStorageException;
-import com.mazadak.payment.exception.StripeOAuthException;
+import com.mazadak.payment.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 
@@ -134,6 +132,22 @@ public class GlobalExceptionHandler {
         problemDetail.setType(URI.create("/errors/internal-server-error"));
         problemDetail.setTitle("Internal Server Error");
         problemDetail.setProperty("message", ex.getMessage());
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ProblemDetail handleResourceNotFoundException(ResourceNotFoundException ex,
+                                                                            WebRequest webRequest) {
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+
+        problemDetail.setType(URI.create("/errors/not-found-error"));
+        problemDetail.setTitle("Resource Not Found");
         problemDetail.setProperty("timestamp", Instant.now());
 
         return problemDetail;
