@@ -1,5 +1,7 @@
 package com.mazadak.payment.service.impl;
 
+import com.mazadak.payment.exception.ResourceNotFoundException;
+import com.mazadak.payment.model.SellerStripeAccount;
 import com.mazadak.payment.model.Transaction;
 import com.mazadak.payment.repository.SellerStripeAccountRepository;
 import com.mazadak.payment.repository.TransactionRepository;
@@ -113,6 +115,10 @@ public class StripePaymentService implements IPaymentService {
 
 
     public String getStripeAccountId(String sellerId) {
-        return sellerStripeAccountRepository.findBySellerId(sellerId).getStripeAccountId();
+        SellerStripeAccount sellerStripeAccount = sellerStripeAccountRepository.findBySellerId(sellerId);
+        if (sellerStripeAccount == null)
+            throw new ResourceNotFoundException("SellerStripeAccount", "sellerId", sellerId);
+
+        return sellerStripeAccount.getStripeAccountId();
     }
 }
