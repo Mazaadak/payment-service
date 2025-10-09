@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SellerStripeAccountRepository extends JpaRepository<SellerStripeAccount, String> {
+    SellerStripeAccount findBySellerId(String sellerId);
 }

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SellerStripeAccount {
+public class SellerStripeAccount extends BaseEntity {
 
     @Id
     private String sellerId;
