@@ -5,7 +5,6 @@ import com.mazadak.payment.service.impl.OnboardingService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.net.OAuth;
-import com.mazadak.payment.exception.SellerServiceException;
 import com.mazadak.payment.exception.StripeOAuthException;
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;

@@ -68,7 +68,6 @@ public class OnboardingService {
         return connectedAccountId;
     }
 
-
     private String exchangeCodeForAccountId(String authorizationCode, String sellerId) {
         Map<String, Object> params = new HashMap<>();
         params.put("grant_type", "authorization_code");
