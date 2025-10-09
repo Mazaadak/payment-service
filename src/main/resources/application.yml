@@ -1,38 +1,41 @@
 spring:
   application:
     name: "payment"
-
-  profiles:
-    active: "default"
-
-  datasource:
-    url: "jdbc:h2:mem:testdb"
-    driverClassName: org.h2.Driver
-    username: sa
-    password: ""
+  config:
+    import: "configserver:http://localhost:18071/"
 
   jpa:
     database-platform: "org.hibernate.dialect.H2Dialect"
     hibernate:
       ddl-auto: update
 
-  h2:
-    console:
-      enabled: true
-      path: "/h2-console"
-
-
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    shutdown:
+      access: unrestricted
+  info:
+    env:
+      enabled: true
 
-stripe:
-  api:
-    secret-key: sk_test_51SE48THRWMzXfAFedGPQ02RwkGnexkJXFeFi6ckainh6NN2dEcGt1if7C8ZqHeRBTbiUmJCaPBibr6nQsgLp5ena00X7YwcW11
-    client-id: ca_TAak0BWyIkV04HPOSCWKapGXV2D3VEPU
+info:
+  app:
+    name: "payment"
+    description: "Mazadak Payment Service"
+    version: "1.0.0"
+
+encrypt:
+  key: "44F964E2BEA145629BF5C35EFEE4F"
 
 
-server:
-  port: 18081

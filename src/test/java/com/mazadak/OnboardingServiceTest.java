@@ -1,12 +1,13 @@
 package com.mazadak;
 
+import com.mazadak.payment.repository.SellerStripeAccountRepository;
 import com.mazadak.payment.service.impl.OnboardingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -16,15 +17,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(MockitoExtension.class)
 class OnboardingServiceTest {
 
+    @Mock
+    private SellerStripeAccountRepository sellerStripeAccountRepository;
+
     @InjectMocks
     private OnboardingService onboardingService;
 
     @BeforeEach
     void setUp() {
-        // Initialize the service and inject mock values for properties
-        onboardingService = org.mockito.Mockito.mock(OnboardingService.class);
-        ReflectionTestUtils.setField(onboardingService, "stripeClientId", "test_client_id");
-        ReflectionTestUtils.setField(onboardingService, "stripeSecretKey", "test_secret_key");
+        // Re-initialize the service with constructor arguments for each test
+        onboardingService = new OnboardingService(sellerStripeAccountRepository);
+        onboardingService.setStripeClientId("test_client_id");
+        onboardingService.setStripeSecretKey("test_secret_key");
         onboardingService.init(); // Manually trigger PostConstruct method
     }
 

@@ -9,6 +9,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.net.OAuth;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Setter
 public class OnboardingService {
 
     @Value("${stripe.api.client-id}")
