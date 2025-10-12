@@ -30,7 +30,7 @@ public record StripePaymentRequest(
         @NotBlank(message = "Seller Stripe account ID is required")
         String sellerStripeAccountId,
 
-        @Schema(description = "Unique key to prevent duplicate processing")
+        @Schema(description = "Unique key to prevent duplicate processing", example = "payment-9bdb72f0-835f-4cb8-87bd-b41ab68d54b1-1760246986034")
         @NotBlank(message = "Idempotency key is required")
         String idempotencyKey
 ) {
