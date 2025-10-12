@@ -2,9 +2,9 @@ package com.mazadak.payment.service.impl;
 
 import com.mazadak.payment.exception.ResourceNotFoundException;
 import com.mazadak.payment.model.SellerStripeAccount;
-import com.mazadak.payment.model.Transaction;
+import com.mazadak.payment.model.StripeTransaction;
 import com.mazadak.payment.repository.SellerStripeAccountRepository;
-import com.mazadak.payment.repository.TransactionRepository;
+import com.mazadak.payment.repository.StripeTransactionRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Charge;
@@ -17,9 +17,11 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -29,7 +31,7 @@ public class StripePaymentService implements IPaymentService {
     @Value("${stripe.api.secret-key}")
     private String secretKey;
 
-    private final TransactionRepository transactionRepository;
+    private final StripeTransactionRepository stripeTransactionRepository;
     private final SellerStripeAccountRepository sellerStripeAccountRepository;
 
     @PostConstruct
@@ -69,38 +71,21 @@ public class StripePaymentService implements IPaymentService {
 
             Charge charge = Charge.create(params,requestOptions);
 
-            transactionRepository.save(buildTransaction(request, commission, charge.getId(), "SUCCESS",null));
+            stripeTransactionRepository.save(buildTransaction(request, commission, charge.getId(), "SUCCESS",null));
 
             log.info("Successfully created charge for order {}: {}", request.orderId(), charge.getId());
             return new StripePaymentResponse(charge.getId(), request.orderId(), "SUCCESS");
         } catch (StripeException e) {
             log.error("Failed to create charge for order {}: {}", request.orderId(), e.getMessage());
 
-            transactionRepository.save(buildTransaction(request, commission, null, "FAILURE" , e.getMessage()));
+            stripeTransactionRepository.save(buildTransaction(request, commission, null, "FAILURE" , e.getMessage()));
 
             return new StripePaymentResponse(null, request.orderId(), "FAILURE");
         }
     }
 
-    private void validateRequest(StripePaymentRequest request) {
-        if (request.orderId() == null || request.orderId().isBlank())
-            throw new IllegalArgumentException("Order ID is required");
-
-        if (request.amount() == null || request.amount().compareTo(BigDecimal.ZERO) <= 0)
-            throw new IllegalArgumentException("Amount must be greater than zero");
-
-        if (request.paymentToken() == null || request.paymentToken().isBlank())
-            throw new IllegalArgumentException("Payment token is required");
-
-        if (request.sellerStripeAccountId() == null || request.sellerStripeAccountId().isBlank())
-            throw new IllegalArgumentException("Seller Stripe account ID is required");
-
-        if (request.idempotencyKey() == null || request.idempotencyKey().isBlank())
-            throw new IllegalArgumentException("Idempotency key is required");
-    }
-
-    private Transaction buildTransaction(StripePaymentRequest request, BigDecimal commission, String stripeChargeId, String status, String stripeErrorMessage) {
-        return Transaction.builder()
+    private StripeTransaction buildTransaction(StripePaymentRequest request, BigDecimal commission, String stripeChargeId, String status, String stripeErrorMessage) {
+        return StripeTransaction.builder()
                 .orderId(request.orderId())
                 .stripeChargeId(stripeChargeId)
                 .sellerStripeAccountId(request.sellerStripeAccountId())
@@ -121,4 +106,19 @@ public class StripePaymentService implements IPaymentService {
 
         return sellerStripeAccount.getStripeAccountId();
     }
+
+    public Page<StripeTransaction> getTransactionsPage(Pageable pageable) {
+        log.info("Fetching transactions for page request: {}", pageable);
+        return stripeTransactionRepository.findAll(pageable);
+    }
+
+    public StripeTransaction getTransactionByOrderId(String orderId) {
+        log.info("Fetching transaction for orderId: {}", orderId);
+        Optional<StripeTransaction> trans = stripeTransactionRepository.findByOrderId(orderId);
+        if (trans.isEmpty())
+            throw new ResourceNotFoundException("StripeTransaction", "orderId", orderId);
+
+        return trans.get();
+    }
+
 }

@@ -1,7 +1,9 @@
 package com.mazadak.payment.controller;
 
 import com.mazadak.payment.dto.request.StripePaymentRequest;
+import com.mazadak.payment.dto.response.PageResponse;
 import com.mazadak.payment.dto.response.StripePaymentResponse;
+import com.mazadak.payment.model.StripeTransaction;
 import com.mazadak.payment.service.impl.StripePaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,10 +13,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
 
 @Tag(name = "Payment Controller", description = "APIs for processing marketplace payments")
@@ -47,11 +50,36 @@ public class StripePaymentController {
             @ApiResponse(responseCode = "404", description = "Seller ID not found or no Stripe account is associated with it"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-
-
     @GetMapping("/get-stripe-account-id")
     public ResponseEntity<Map<String,Object>> getStripeAccountId(@RequestParam String sellerId) {
         String stripeAccountId = paymentService.getStripeAccountId(sellerId);
         return ResponseEntity.ok(Map.of("stripeAccountId", stripeAccountId));
+    }
+
+    @Operation(summary = "Get transactions page",
+            description = "Retrieves a paginated list of all Stripe transactions.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list of transactions"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/transactions")
+    public ResponseEntity<PageResponse<StripeTransaction>> getAllTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        Page<StripeTransaction> transactions = paymentService.getTransactionsPage(PageRequest.of(page, size));
+        return ResponseEntity.ok(new PageResponse<>(transactions));
+    }
+
+    @Operation(summary = "Get transaction by order ID",
+            description = "Retrieves a single Stripe transaction by its unique order ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transaction found and retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Transaction not found for the given order ID"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/transactions/{orderId}")
+    public ResponseEntity<StripeTransaction> getTransactionByOrderId(@PathVariable String orderId) {
+        StripeTransaction transaction = paymentService.getTransactionByOrderId(orderId);
+        return ResponseEntity.ok(transaction);
     }
 }

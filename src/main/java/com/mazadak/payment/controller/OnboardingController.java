@@ -66,7 +66,7 @@ public class OnboardingController {
 
 
     @Operation(summary = "Handle Stripe OAuth Callback",
-            description = "Handles the callback from Stripe after a seller completes the OAuth process\n " +
+            description = "Handles the callback from Stripe after a seller completes the OAuth process " +
                     "Exchanges the authorization code for an access token and connects the Stripe account to the seller")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Stripe account id created successfully",

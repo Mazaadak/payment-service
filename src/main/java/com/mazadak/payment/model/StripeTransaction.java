@@ -1,5 +1,6 @@
 package com.mazadak.payment.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,16 +18,18 @@ import java.util.UUID;
 * */
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "stripe_transactions")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Transaction extends BaseEntity {
+public class StripeTransaction extends BaseEntity {
 
+    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
 
     @Column(nullable = false)
     private String orderId;
