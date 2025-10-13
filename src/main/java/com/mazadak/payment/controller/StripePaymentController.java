@@ -1,7 +1,9 @@
 package com.mazadak.payment.controller;
 
+import com.mazadak.payment.dto.request.RefundRequest;
 import com.mazadak.payment.dto.request.StripePaymentRequest;
 import com.mazadak.payment.dto.response.PageResponse;
+import com.mazadak.payment.dto.response.RefundResponse;
 import com.mazadak.payment.dto.response.StripePaymentResponse;
 import com.mazadak.payment.model.StripeTransaction;
 import com.mazadak.payment.service.impl.StripePaymentService;
@@ -81,5 +83,21 @@ public class StripePaymentController {
     public ResponseEntity<StripeTransaction> getTransactionByOrderId(@PathVariable String orderId) {
         StripeTransaction transaction = paymentService.getTransactionByOrderId(orderId);
         return ResponseEntity.ok(transaction);
+    }
+
+
+    @Operation(summary = "Refund a payment",
+            description = "Processes a full refund for a previously successful transaction")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Refund processed successfully",
+                    content = @Content(schema = @Schema(implementation = RefundResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid refund request (e.g., transaction not successful, already refunded)"),
+            @ApiResponse(responseCode = "404", description = "Transaction not found for the given order ID"),
+            @ApiResponse(responseCode = "500", description = "Internal server error during refund processing")
+    })
+    @PostMapping("/refund")
+    public ResponseEntity<RefundResponse> refundPayment(@Valid @RequestBody RefundRequest request) {
+        RefundResponse response = paymentService.refundPayment(request);
+        return ResponseEntity.ok(response);
     }
 }

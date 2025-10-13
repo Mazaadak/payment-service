@@ -11,9 +11,4 @@ public class PaymentProcessingException extends RuntimeException {
         this.orderId = orderId;
     }
 
-    public PaymentProcessingException(String message, String orderId, Throwable cause) {
-        super(message, cause);
-        this.orderId = orderId;
-    }
-
 }

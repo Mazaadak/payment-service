@@ -56,4 +56,6 @@ public class StripeTransaction extends BaseEntity {
 
     private String stripeErrorMessage;
 
+    private Boolean refunded;
+
 }
