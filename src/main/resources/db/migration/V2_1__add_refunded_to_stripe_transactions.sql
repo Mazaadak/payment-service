@@ -1,0 +1,2 @@
+ALTER TABLE stripe_transactions
+ADD COLUMN refunded BOOLEAN DEFAULT FALSE;
