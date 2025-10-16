@@ -27,6 +27,9 @@ public class StripeChargeTransaction extends BaseEntity {
     private String orderId;
 
     @Column(unique = true)
+    private String paymentIntentId;
+
+    @Column(unique = true)
     private String stripeChargeId;
 
     @Column(nullable = false)
@@ -47,4 +50,7 @@ public class StripeChargeTransaction extends BaseEntity {
 
     @OneToMany(mappedBy = "chargeTransaction", cascade = CascadeType.ALL)
     private List<StripeTransferTransaction> transfers;
+
+    @OneToMany(mappedBy = "chargeTransaction", cascade = CascadeType.ALL, fetch = FetchType.EAGER) // Eager fetch for webhook processing
+    private List<OrderItem> orderItems;
 }

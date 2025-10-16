@@ -4,11 +4,9 @@ import lombok.Getter;
 
 @Getter
 public class PaymentProcessingException extends RuntimeException {
-    private final String orderId;
 
-    public PaymentProcessingException(String message, String orderId) {
+    public PaymentProcessingException(String message) {
         super(message);
-        this.orderId = orderId;
     }
 
 }
