@@ -5,7 +5,7 @@ import com.mazadak.payment.dto.request.StripePaymentRequest;
 import com.mazadak.payment.dto.response.PageResponse;
 import com.mazadak.payment.dto.response.RefundResponse;
 import com.mazadak.payment.dto.response.StripePaymentResponse;
-import com.mazadak.payment.model.StripeTransaction;
+import com.mazadak.payment.model.StripeChargeTransaction;
 import com.mazadak.payment.service.impl.StripePaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -65,10 +65,10 @@ public class StripePaymentController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/transactions")
-    public ResponseEntity<PageResponse<StripeTransaction>> getAllTransactions(
+    public ResponseEntity<PageResponse<StripeChargeTransaction>> getAllTransactions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size) {
-        Page<StripeTransaction> transactions = paymentService.getTransactionsPage(PageRequest.of(page, size));
+        Page<StripeChargeTransaction> transactions = paymentService.getTransactionsPage(PageRequest.of(page, size));
         return ResponseEntity.ok(new PageResponse<>(transactions));
     }
 
@@ -80,8 +80,8 @@ public class StripePaymentController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/transactions/{orderId}")
-    public ResponseEntity<StripeTransaction> getTransactionByOrderId(@PathVariable String orderId) {
-        StripeTransaction transaction = paymentService.getTransactionByOrderId(orderId);
+    public ResponseEntity<StripeChargeTransaction> getTransactionByOrderId(@PathVariable String orderId) {
+        StripeChargeTransaction transaction = paymentService.getTransactionByOrderId(orderId);
         return ResponseEntity.ok(transaction);
     }
 
