@@ -179,7 +179,7 @@ public class StripePaymentService {
                     finalizePaymentAndCreateTransfers(paymentIntent);
 
 
-                    streamBridge.send("paymentSuccess-out-0", new PaymentSuccessEvent(orderId, checkoutType));
+                    streamBridge.send("paymentSuccess-out-0", new PaymentSuccessEvent(paymentIntent.getId(), orderId, checkoutType));
                     log.info("Published PaymentSuccessEvent to Kafka for Order ID: {}", orderId);
                     break;
                 case "payment_intent.requires_capture":
@@ -196,13 +196,15 @@ public class StripePaymentService {
                 case "payment_intent.canceled":
                     log.info("Webhook received: PaymentIntent {} was canceled.", paymentIntent.getId());
                     updateTransactionStatus(paymentIntent, "CANCELED");
+                    streamBridge.send("paymentFailed-out-0", new PaymentFailedEvent(paymentIntent.getId(),orderId, "Payment was canceled"));
+                    log.info("Published PaymentFailedEvent to Kafka for Order ID: {}", orderId);
                     break;
                 case "payment_intent.payment_failed":
                     String failureReason = paymentIntent.getLastPaymentError() != null ? paymentIntent.getLastPaymentError().getMessage() : "Unknown reason";
                     log.warn("Webhook received: PaymentIntent {} failed: {}", paymentIntent.getId(), paymentIntent.getLastPaymentError().getMessage());
                     updateTransactionStatus(paymentIntent, "FAILED");
 
-                    streamBridge.send("paymentFailed-out-0", new PaymentFailedEvent(orderId, failureReason));
+                    streamBridge.send("paymentFailed-out-0", new PaymentFailedEvent(paymentIntent.getId(),orderId, failureReason));
                     log.info("Published PaymentFailedEvent to Kafka for Order ID: {}", orderId);
                     break;
                 default:
