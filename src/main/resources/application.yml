@@ -11,6 +11,22 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: true
 
+  cloud:
+    stream:
+
+      bindings:
+        paymentSuccess-out-0:
+          destination: payment-success
+
+        paymentFailed-out-0:
+          destination: payment-failed
+
+      kafka:
+        binder:
+          brokers:
+          - localhost:9092
+
+
 management:
   endpoints:
     web:
@@ -39,5 +55,3 @@ info:
 
 encrypt:
   key: "44F964E2BEA145629BF5C35EFEE4F"
-
-

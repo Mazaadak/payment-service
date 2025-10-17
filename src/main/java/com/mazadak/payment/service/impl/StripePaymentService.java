@@ -1,6 +1,8 @@
 package com.mazadak.payment.service.impl;
 
 import com.mazadak.payment.constant.PaymentStates;
+import com.mazadak.payment.dto.event.PaymentFailedEvent;
+import com.mazadak.payment.dto.event.PaymentSuccessEvent;
 import com.mazadak.payment.dto.request.CartItem;
 import com.mazadak.payment.dto.request.CreatePaymentIntentRequest;
 import com.mazadak.payment.dto.request.RefundRequest;
@@ -29,6 +31,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +55,7 @@ public class StripePaymentService {
     private final StripeChargeTransactionRepository stripeChargeTransactionRepository;
     private final StripeTransferTransactionRepository stripeTransferTransactionRepository;
     private final SellerStripeAccountRepository sellerStripeAccountRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final StreamBridge streamBridge;
 
     @PostConstruct
     public void init() {
@@ -175,8 +178,8 @@ public class StripePaymentService {
                     log.info("Webhook received: PaymentIntent {} succeeded.", paymentIntent.getId());
                     finalizePaymentAndCreateTransfers(paymentIntent);
 
-                    /// TODO: Payment successful event should be fired here
-
+                    streamBridge.send("paymentSuccess-out-0", new PaymentSuccessEvent(orderId));
+                    log.info("Published PaymentSuccessEvent to Kafka for Order ID: {}", orderId);
                     break;
                 case "payment_intent.requires_capture":
                     log.info("Webhook received: PaymentIntent {} requires capture.", paymentIntent.getId());
@@ -191,8 +194,8 @@ public class StripePaymentService {
                     log.warn("Webhook received: PaymentIntent {} failed: {}", paymentIntent.getId(), paymentIntent.getLastPaymentError().getMessage());
                     updateTransactionStatus(paymentIntent, "FAILED");
 
-                    /// TODO: Payment failed event should be fired here
-
+                    streamBridge.send("paymentFailed-out-0", new PaymentFailedEvent(orderId, failureReason));
+                    log.info("Published PaymentFailedEvent to Kafka for Order ID: {}", orderId);
                     break;
                 default:
                     log.warn("Unhandled event type for PaymentIntent: {}", event.getType());
