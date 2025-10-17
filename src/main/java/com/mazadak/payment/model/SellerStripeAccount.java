@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "seller_stripe_accounts")
 @Data
@@ -16,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class SellerStripeAccount extends BaseEntity {
 
     @Id
-    private String sellerId;
+    private UUID sellerId;
 
     @Column(nullable = false, unique = true)
     private String stripeAccountId;

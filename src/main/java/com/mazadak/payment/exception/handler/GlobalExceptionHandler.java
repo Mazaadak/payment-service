@@ -42,7 +42,6 @@ public class GlobalExceptionHandler {
 
         problemDetail.setType(URI.create("/errors/payment-processing"));
         problemDetail.setTitle("Payment Processing Failed");
-        problemDetail.setProperty("orderId", ex.getOrderId());
         problemDetail.setProperty("timestamp", Instant.now());
 
         return problemDetail;

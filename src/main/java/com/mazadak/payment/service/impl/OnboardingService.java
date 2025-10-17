@@ -17,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -39,8 +40,8 @@ public class OnboardingService {
     }
 
 
-    public String generateOnboardingUrl(String sellerId) {
-        if (sellerId == null || sellerId.isBlank())
+    public String generateOnboardingUrl(UUID sellerId) {
+        if (sellerId == null)
             throw new IllegalArgumentException("sellerId is required");
 
 
@@ -55,7 +56,7 @@ public class OnboardingService {
         return url;
     }
 
-    public String handleOAuthCallback(String authorizationCode, String sellerId) {
+    public String handleOAuthCallback(String authorizationCode, UUID sellerId) {
 
         log.info("Processing OAuth callback for seller: {}", sellerId);
 
@@ -70,7 +71,7 @@ public class OnboardingService {
         return connectedAccountId;
     }
 
-    private String exchangeCodeForAccountId(String authorizationCode, String sellerId) {
+    private String exchangeCodeForAccountId(String authorizationCode, UUID sellerId) {
         Map<String, Object> params = new HashMap<>();
         params.put("grant_type", "authorization_code");
         params.put("code", authorizationCode);
@@ -81,15 +82,15 @@ public class OnboardingService {
             String connectedAccountId = response.getStripeUserId();
 
             if (connectedAccountId == null)
-                throw new StripeOAuthException("Could not retrieve Stripe User ID from OAuth response", sellerId);
+                throw new StripeOAuthException("Could not retrieve Stripe User ID from OAuth response", sellerId.toString());
 
             return connectedAccountId;
         } catch (StripeException e) {
-            throw new StripeOAuthException("Stripe OAuth failed: " + e.getMessage(), sellerId, e);
+            throw new StripeOAuthException("Stripe OAuth failed: " + e.getMessage(), sellerId.toString(), e);
         }
     }
 
-    void storeStripeAccount(String sellerId, String connectedAccountId){
+    void storeStripeAccount(UUID sellerId, String connectedAccountId){
         SellerStripeAccount sellerStripeAccount = new SellerStripeAccount();
         sellerStripeAccount.setSellerId(sellerId);
         sellerStripeAccount.setStripeAccountId(connectedAccountId);

@@ -1,12 +1,12 @@
 CREATE TABLE charge_transactions
 (
     id                   UUID PRIMARY KEY,
-    order_id             VARCHAR(255)   NOT NULL UNIQUE,
+    order_id             UUID   NOT NULL UNIQUE,
     stripe_charge_id     VARCHAR(255) UNIQUE,
     amount               NUMERIC(19, 2) NOT NULL,
     currency             VARCHAR(255)   NOT NULL,
     status               VARCHAR(255)   NOT NULL,
-    idempotency_key      VARCHAR(255) UNIQUE,
+    idempotency_key      UUID UNIQUE,
     stripe_error_message TEXT,
     refunded             BOOLEAN,
     created_at           TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -33,7 +33,7 @@ CREATE TABLE transfer_transactions
 
 CREATE TABLE seller_stripe_accounts
 (
-    sellerId                 VARCHAR(255) PRIMARY KEY,
+    sellerId                 UUID PRIMARY KEY,
     stripeAccountId          VARCHAR(255) UNIQUE NOT NULL,
     created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
