@@ -21,9 +21,9 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.Parameter;
-import java.util.HashMap;
+
 import java.util.Map;
+import java.util.UUID;
 
 @Tag(name = "Stripe Onboarding", description = "APIs for handling Stripe Connect account onboarding")
 @RestController
@@ -59,9 +59,9 @@ public class OnboardingController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(type = "object", example = "{\"sellerId\": \"1254\"}"),
-                            examples = @ExampleObject(name = "Seller ID Example", value = "{\"sellerId\": \"1254\"}")
-                    )) @org.springframework.web.bind.annotation.RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(Map.of("onboardingUrl", onboardingService.generateOnboardingUrl(payload.get("sellerId"))));
+                            examples = @ExampleObject(name = "Seller ID Example", value = "{\"sellerId\": \"UUID\"}")
+                    )) @org.springframework.web.bind.annotation.RequestBody Map<String, UUID> payload) {
+        return ResponseEntity.ok(Map.of("onboardingUrl", onboardingService.generateOnboardingUrl(payload.get("sellerId")).toString()));
     }
 
 
@@ -84,7 +84,7 @@ public class OnboardingController {
     @GetMapping("/oauth/callback")
     public String getOAuthCallback(
             @RequestParam("code") String authorizationCode,
-            @RequestParam("state") String sellerId) {
+            @RequestParam("state") UUID sellerId) {
 
         String connectedAccountId = onboardingService.handleOAuthCallback(authorizationCode, sellerId);
 

@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 
 @Tag(name = "Payment Controller", description = "APIs for processing marketplace payments")
 @RestController
@@ -27,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 public class StripePaymentController {
     private final StripePaymentService paymentService;
 
-    @Operation(summary = "Create a Payment Intent",
+    @Operation(summary = "Create a Payment Intent (Authorize)",
             description = "Initiates a payment by creating a PaymentIntent...The response contains a client secret that the frontend uses to confirm the payment")
     @PostMapping("/create-payment-intent")
     public ResponseEntity<CreatePaymentIntentResponse> createPaymentIntent(@Valid @RequestBody CreatePaymentIntentRequest request) {
@@ -47,7 +49,7 @@ public class StripePaymentController {
     @Operation(summary = "Capture a Payment Intent",
             description = "Captures the funds for a previously authorized payment. This is the action that actually charges the customer's card.")
     @PostMapping("/{orderId}/capture")
-    public ResponseEntity<PaymentIntentResponse> capturePayment(@PathVariable String orderId) {
+    public ResponseEntity<PaymentIntentResponse> capturePayment(@PathVariable UUID orderId) {
         PaymentIntent capturedPaymentIntent = paymentService.capturePayment(orderId);
         return ResponseEntity.ok(PaymentIntentResponse.from(capturedPaymentIntent));
     }
@@ -55,7 +57,7 @@ public class StripePaymentController {
     @Operation(summary = "Cancel a Payment Intent",
             description = "Cancels a previously authorized payment, releasing the hold on the customer's card. This can only be done before the payment is captured.")
     @PostMapping("/{orderId}/cancel")
-    public ResponseEntity<PaymentIntentResponse> cancelPayment(@PathVariable String orderId) {
+    public ResponseEntity<PaymentIntentResponse> cancelPayment(@PathVariable UUID orderId) {
         PaymentIntent canceledPaymentIntent = paymentService.cancelPayment(orderId);
         return ResponseEntity.ok(PaymentIntentResponse.from(canceledPaymentIntent));
     }

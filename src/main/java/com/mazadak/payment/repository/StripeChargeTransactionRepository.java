@@ -10,6 +10,6 @@ import java.util.UUID;
 @Repository
 public interface StripeChargeTransactionRepository extends JpaRepository<StripeChargeTransaction, UUID> {
 
-    Optional<StripeChargeTransaction> findByOrderId(String orderId);
+    Optional<StripeChargeTransaction> findByOrderId(UUID orderId);
     Optional<StripeChargeTransaction> findByPaymentIntentId(String paymentIntentId);
 }

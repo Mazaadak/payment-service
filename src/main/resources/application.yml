@@ -21,6 +21,9 @@ spring:
         paymentFailed-out-0:
           destination: payment-failed
 
+        paymentAuthorized-out-0:
+          destination: payment-authorized
+
       kafka:
         binder:
           brokers:

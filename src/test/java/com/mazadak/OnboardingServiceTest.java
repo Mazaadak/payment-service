@@ -9,6 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,7 +36,7 @@ class OnboardingServiceTest {
 
     @Test
     void generateOnboardingUrl_withValidSellerId_returnsCorrectUrl() {
-        String sellerId = "seller123";
+        UUID sellerId = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
         String url = onboardingService.generateOnboardingUrl(sellerId);
 
@@ -48,7 +50,7 @@ class OnboardingServiceTest {
 
     @Test
     void generateOnboardingUrl_withNullSellerId_throwsIllegalArgumentException() {
-        String sellerId = null;
+        UUID sellerId = null;
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             onboardingService.generateOnboardingUrl(sellerId);
@@ -59,7 +61,7 @@ class OnboardingServiceTest {
 
     @Test
     void generateOnboardingUrl_withBlankSellerId_throwsIllegalArgumentException() {
-        String sellerId = " ";
+        UUID sellerId = UUID.randomUUID();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             onboardingService.generateOnboardingUrl(sellerId);

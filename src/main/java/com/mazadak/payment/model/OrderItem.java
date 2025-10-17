@@ -28,7 +28,7 @@ public class OrderItem extends BaseEntity {
     private StripeChargeTransaction chargeTransaction;
 
     @Column(nullable = false)
-    private String sellerId;
+    private UUID sellerId;
 
     @Column(nullable = false)
     private BigDecimal amount;

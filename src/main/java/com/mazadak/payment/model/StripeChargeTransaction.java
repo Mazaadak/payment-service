@@ -24,7 +24,7 @@ public class StripeChargeTransaction extends BaseEntity {
     private UUID id;
 
     @Column(nullable = false, unique = true)
-    private String orderId;
+    private UUID orderId;
 
     @Column(unique = true)
     private String paymentIntentId;
@@ -42,7 +42,7 @@ public class StripeChargeTransaction extends BaseEntity {
     private String status;
 
     @Column(unique = true)
-    private String idempotencyKey;
+    private UUID idempotencyKey;
 
     private String stripeErrorMessage;
 
@@ -51,6 +51,6 @@ public class StripeChargeTransaction extends BaseEntity {
     @OneToMany(mappedBy = "chargeTransaction", cascade = CascadeType.ALL)
     private List<StripeTransferTransaction> transfers;
 
-    @OneToMany(mappedBy = "chargeTransaction", cascade = CascadeType.ALL, fetch = FetchType.EAGER) // Eager fetch for webhook processing
+    @OneToMany(mappedBy = "chargeTransaction", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems;
 }

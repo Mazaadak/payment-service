@@ -1,6 +1,7 @@
 package com.mazadak.payment.service.impl;
 
 import com.mazadak.payment.constant.PaymentStates;
+import com.mazadak.payment.dto.event.PaymentAuthorizedEvent;
 import com.mazadak.payment.dto.event.PaymentFailedEvent;
 import com.mazadak.payment.dto.event.PaymentSuccessEvent;
 import com.mazadak.payment.dto.request.CartItem;
@@ -20,10 +21,7 @@ import com.mazadak.payment.repository.StripeTransferTransactionRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
-import com.stripe.model.Event;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.Refund;
-import com.stripe.model.Transfer;
+import com.stripe.model.*;
 import com.stripe.net.RequestOptions;
 import com.stripe.net.Webhook;
 import com.stripe.param.*;
@@ -32,13 +30,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,7 +72,8 @@ public class StripePaymentService {
                     .setAmount(totalAmountInCents)
                     .setCurrency(request.currency().toLowerCase())
                     .setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.MANUAL)
-                    .putMetadata("orderId", request.orderId())
+                    .putMetadata("orderId", request.orderId().toString())
+                    .putMetadata("checkoutType", request.type())
                     .build();
             String idempotencyKey = "create-" + request.orderId();
             RequestOptions requestOptions = RequestOptions.builder().setIdempotencyKey(idempotencyKey).build();
@@ -98,7 +97,7 @@ public class StripePaymentService {
     }
 
     @Transactional
-    public PaymentIntent capturePayment(String orderId) {
+    public PaymentIntent capturePayment(UUID orderId) {
         log.info("Attempting to capture payment for orderId: {}", orderId);
         StripeChargeTransaction chargeTransaction = findChargeByOrderId(orderId);
 
@@ -110,9 +109,9 @@ public class StripePaymentService {
                 throw new PaymentProcessingException("PaymentIntent cannot be captured. Status: " + paymentIntent.getStatus());
             }
 
-            String idempotencyKey = "capture-" + paymentIntent.getId();
+            UUID idempotencyKey = UUID.randomUUID();
             RequestOptions requestOptions = RequestOptions.builder()
-                    .setIdempotencyKey(idempotencyKey)
+                    .setIdempotencyKey(idempotencyKey.toString())
                     .build();
 
             PaymentIntent capturedPaymentIntent = paymentIntent.capture(PaymentIntentCaptureParams.builder().build() , requestOptions);
@@ -131,16 +130,16 @@ public class StripePaymentService {
     }
 
     @Transactional
-    public PaymentIntent cancelPayment(String orderId) {
+    public PaymentIntent cancelPayment(UUID orderId) {
         log.info("Attempting to cancel payment for orderId: {}", orderId);
         StripeChargeTransaction chargeTransaction = findChargeByOrderId(orderId);
 
         try {
             PaymentIntent paymentIntent = PaymentIntent.retrieve(chargeTransaction.getPaymentIntentId());
 
-            String idempotencyKey = "cancel-" + paymentIntent.getId();
+            UUID idempotencyKey = UUID.randomUUID();
             RequestOptions requestOptions = RequestOptions.builder()
-                    .setIdempotencyKey(idempotencyKey)
+                    .setIdempotencyKey(idempotencyKey.toString())
                     .build();
 
             PaymentIntent canceledPaymentIntent = paymentIntent.cancel(PaymentIntentCancelParams.builder().build() , requestOptions);
@@ -173,17 +172,26 @@ public class StripePaymentService {
         if (event.getDataObjectDeserializer().getObject().orElse(null) instanceof PaymentIntent) {
             PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().get();
             String orderId = paymentIntent.getMetadata().get("orderId");
+            String checkoutType = paymentIntent.getMetadata().get("checkoutType");
             switch (event.getType()) {
                 case "payment_intent.succeeded":
                     log.info("Webhook received: PaymentIntent {} succeeded.", paymentIntent.getId());
                     finalizePaymentAndCreateTransfers(paymentIntent);
 
-                    streamBridge.send("paymentSuccess-out-0", new PaymentSuccessEvent(orderId));
+
+                    streamBridge.send("paymentSuccess-out-0", new PaymentSuccessEvent(orderId, checkoutType));
                     log.info("Published PaymentSuccessEvent to Kafka for Order ID: {}", orderId);
                     break;
                 case "payment_intent.requires_capture":
                     log.info("Webhook received: PaymentIntent {} requires capture.", paymentIntent.getId());
                     updateTransactionStatus(paymentIntent, "REQUIRES_CAPTURE");
+                    break;
+                case "payment_intent.amount_capturable_updated":
+                    log.info("Webhook received: PaymentIntent {} amount_capturable_updated.", paymentIntent.getId());
+                    PaymentAuthorizedEvent paymentAuthorizedEvent = new PaymentAuthorizedEvent(paymentIntent.getId(), orderId,checkoutType, new BigDecimal(paymentIntent.getAmount()));
+                    streamBridge.send("paymentAuthorized-out-0", paymentAuthorizedEvent);
+                    log.info("Published PaymentAuthorizedEvent to Kafka for Order ID: {}", orderId);
+                    log.info("Payment Authorized Event Details{}", paymentAuthorizedEvent);
                     break;
                 case "payment_intent.canceled":
                     log.info("Webhook received: PaymentIntent {} was canceled.", paymentIntent.getId());
@@ -219,11 +227,11 @@ public class StripePaymentService {
 
         stripeChargeTransactionRepository.save(chargeTransaction);
 
-        Map<String, BigDecimal> sellerTotals = chargeTransaction.getOrderItems().stream()
+        Map<UUID, BigDecimal> sellerTotals = chargeTransaction.getOrderItems().stream()
                 .collect(Collectors.groupingBy(OrderItem::getSellerId, Collectors.mapping(OrderItem::getAmount, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
 
-        for (Map.Entry<String, BigDecimal> entry : sellerTotals.entrySet()) {
-            String sellerId = entry.getKey();
+        for (Map.Entry<UUID, BigDecimal> entry : sellerTotals.entrySet()) {
+            UUID sellerId = entry.getKey();
             BigDecimal sellerAmount = entry.getValue();
             long sellerAmountInCents = sellerAmount.multiply(new BigDecimal("100")).longValue();
 
@@ -281,7 +289,7 @@ public class StripePaymentService {
                     .setPaymentIntent(chargeTransaction.getPaymentIntentId())
                     .build();
 
-            RequestOptions requestOptions = RequestOptions.builder().setIdempotencyKey(refundRequest.idempotencyKey()).build();
+            RequestOptions requestOptions = RequestOptions.builder().setIdempotencyKey(refundRequest.idempotencyKey().toString()).build();
             Refund refund = Refund.create(params, requestOptions);
 
             chargeTransaction.setStatus(PaymentStates.REFUNDED);
@@ -324,7 +332,7 @@ public class StripePaymentService {
         return charge;
     }
 
-    private StripeTransferTransaction buildTransferTransaction(StripeChargeTransaction parent, String sellerId, BigDecimal amount, String stripeTransferId, String status, String stripeErrorMessage) {
+    private StripeTransferTransaction buildTransferTransaction(StripeChargeTransaction parent, UUID sellerId, BigDecimal amount, String stripeTransferId, String status, String stripeErrorMessage) {
         return StripeTransferTransaction.builder()
                 .chargeTransaction(parent)
                 .stripeTransferId(stripeTransferId)
@@ -336,16 +344,16 @@ public class StripePaymentService {
                 .build();
     }
 
-    public String getStripeAccountId(String sellerId) {
+    public String getStripeAccountId(UUID sellerId) {
         SellerStripeAccount sellerStripeAccount = sellerStripeAccountRepository.findBySellerId(sellerId);
         if (sellerStripeAccount == null)
-            throw new ResourceNotFoundException("SellerStripeAccount", "sellerId", sellerId);
+            throw new ResourceNotFoundException("SellerStripeAccount", "sellerId", sellerId.toString());
 
         return sellerStripeAccount.getStripeAccountId();
     }
 
-    public StripeChargeTransaction findChargeByOrderId(String orderId) {
+    public StripeChargeTransaction findChargeByOrderId(UUID orderId) {
         return stripeChargeTransactionRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Charge Transaction", "orderId", orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Charge Transaction", "orderId", orderId.toString()));
     }
 }

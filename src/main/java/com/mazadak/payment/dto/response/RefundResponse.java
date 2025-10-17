@@ -2,6 +2,8 @@ package com.mazadak.payment.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.UUID;
+
 @Schema(description = "The response body returned after a refund has been processed.")
 public record RefundResponse(
 
@@ -11,7 +13,7 @@ public record RefundResponse(
 
         @Schema(description = "The order ID associated with the transaction that was refunded.",
                 example = "order-abc-123")
-        String orderId,
+        UUID orderId,
 
         @Schema(description = "The status of the refund as reported by Stripe.",
                 example = "succeeded")
