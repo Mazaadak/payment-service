@@ -75,11 +75,11 @@ public class StripePaymentService {
                     .putMetadata("orderId", request.orderId().toString())
                     .putMetadata("checkoutType", request.type())
                     .build();
-            String idempotencyKey = "create-" + request.orderId();
-            RequestOptions requestOptions = RequestOptions.builder().setIdempotencyKey(idempotencyKey).build();
+            UUID idempotencyKey = UUID.randomUUID();
+            RequestOptions requestOptions = RequestOptions.builder().setIdempotencyKey(idempotencyKey.toString()).build();
             PaymentIntent paymentIntent = PaymentIntent.create(params, requestOptions);
 
-            StripeChargeTransaction chargeTransaction = buildChargeTransaction(request, totalAmount, paymentIntent);
+            StripeChargeTransaction chargeTransaction = buildChargeTransaction(request, totalAmount, paymentIntent, idempotencyKey);
             stripeChargeTransactionRepository.save(chargeTransaction);
             log.info("Successfully created PaymentIntent {} for orderId {}", paymentIntent.getId(), request.orderId());
             return new CreatePaymentIntentResponse(paymentIntent.getClientSecret());
@@ -312,11 +312,12 @@ public class StripePaymentService {
         }
     }
 
-    private StripeChargeTransaction buildChargeTransaction(CreatePaymentIntentRequest request, BigDecimal totalAmount, PaymentIntent paymentIntent) {
+    private StripeChargeTransaction buildChargeTransaction(CreatePaymentIntentRequest request, BigDecimal totalAmount, PaymentIntent paymentIntent, UUID idempotencyKey) {
         StripeChargeTransaction charge = StripeChargeTransaction.builder()
                 .orderId(request.orderId())
                 .paymentIntentId(paymentIntent.getId())
                 .amount(totalAmount)
+                .idempotencyKey(idempotencyKey)
                 .currency(request.currency())
                 .status(paymentIntent.getStatus().toUpperCase())
                 .refunded(false)
