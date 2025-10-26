@@ -84,13 +84,13 @@ public class OnboardingController {
                             examples = @ExampleObject(value = "{\"error\": \"Failed to connect Stripe account\"}")))
     })
     @GetMapping("/oauth/callback")
-    public String getOAuthCallback(
+    public ResponseEntity<String> getOAuthCallback(
             @RequestParam("code") String authorizationCode,
             @RequestParam("state") UUID sellerId) {
 
         String connectedAccountId = onboardingService.handleOAuthCallback(authorizationCode, sellerId);
 
-        return "<h1>Stripe Account Connected</h1><p>accountId: (" + connectedAccountId + ")</p>";
+        return ResponseEntity.ok(connectedAccountId);
     }
 
 
