@@ -45,7 +45,6 @@ public class StripePaymentController {
         return ResponseEntity.ok().build();
     }
 
-
     @Operation(summary = "Capture a Payment Intent",
             description = "Captures the funds for a previously authorized payment. This is the action that actually charges the customer's card.")
     @PostMapping("/{orderId}/capture")
