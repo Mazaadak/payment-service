@@ -2,6 +2,7 @@ package com.mazadak.payment.controller;
 
 import com.mazadak.payment.constant.OnboardingConstants;
 import com.mazadak.payment.service.impl.OnboardingService;
+import com.mazadak.payment.service.impl.StripePaymentService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.net.OAuth;
@@ -34,6 +35,7 @@ import java.util.UUID;
 public class OnboardingController {
 
     private final OnboardingService onboardingService;
+    private final StripePaymentService paymentService;
 
     @Operation(summary = "Generate Stripe OAuth URL",
             description = "Generates a Stripe Connect OAuth URL for seller onboarding")
@@ -92,6 +94,13 @@ public class OnboardingController {
     }
 
 
-
-
+    @Operation(summary = "Get Stripe Account Id for certain Seller")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Get Stripe account id"),
+            @ApiResponse(responseCode = "404", description = "Seller or Stripe account not found")
+    })
+    @GetMapping("/get-account/{sellerId}")
+    public ResponseEntity<String> getConnectedAccountId(@PathVariable UUID sellerId) {
+        return ResponseEntity.ok(paymentService.getStripeAccountId(sellerId));
+    }
 }
