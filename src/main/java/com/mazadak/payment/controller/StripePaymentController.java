@@ -22,7 +22,6 @@ import java.util.UUID;
 
 @Tag(name = "Payment Controller", description = "APIs for processing marketplace payments")
 @RestController
-@CrossOrigin(origins = "*")
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Validated

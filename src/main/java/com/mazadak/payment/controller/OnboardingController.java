@@ -29,7 +29,6 @@ import java.util.UUID;
 @Tag(name = "Stripe Onboarding", description = "APIs for handling Stripe Connect account onboarding")
 @RestController
 @RequestMapping("/api/onboarding")
-@CrossOrigin(origins = "*")
 @Slf4j
 @AllArgsConstructor
 public class OnboardingController {
