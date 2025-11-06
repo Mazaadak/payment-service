@@ -24,6 +24,9 @@ spring:
         paymentAuthorized-out-0:
           destination: payment-authorized
 
+        paymentIntentCreated-out-0:
+          destination: intent-created
+
       kafka:
         binder:
           brokers:

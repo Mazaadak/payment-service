@@ -3,6 +3,7 @@ package com.mazadak.payment.service.impl;
 import com.mazadak.payment.constant.PaymentStates;
 import com.mazadak.payment.dto.event.PaymentAuthorizedEvent;
 import com.mazadak.payment.dto.event.PaymentFailedEvent;
+import com.mazadak.payment.dto.event.PaymentIntentCreatedEvent;
 import com.mazadak.payment.dto.event.PaymentSuccessEvent;
 import com.mazadak.payment.dto.request.CartItem;
 import com.mazadak.payment.dto.request.CreatePaymentIntentRequest;
@@ -161,6 +162,7 @@ public class StripePaymentService {
 
     @Transactional
     public void handleStripeWebhook(String payload, String sigHeader) {
+        log.info("Webhook triggered");
         Event event;
         try { /// For Security purpose
             event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
@@ -174,6 +176,19 @@ public class StripePaymentService {
             String orderId = paymentIntent.getMetadata().get("orderId");
             String checkoutType = paymentIntent.getMetadata().get("checkoutType");
             switch (event.getType()) {
+                case "payment_intent.created":
+                    log.info("Webhook received: PaymentIntent {} created.", paymentIntent.getId());
+                    String clientSecret = paymentIntent.getClientSecret();
+
+                    var createdEvent = new PaymentIntentCreatedEvent(
+                            paymentIntent.getId(),
+                            clientSecret,
+                            orderId
+                    );
+
+                    streamBridge.send("paymentIntentCreated-out-0", createdEvent);
+                    log.info("Published PaymentIntentCreatedEvent {}", createdEvent);
+                    break;
                 case "payment_intent.succeeded":
                     log.info("Webhook received: PaymentIntent {} succeeded.", paymentIntent.getId());
                     finalizePaymentAndCreateTransfers(paymentIntent);
