@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -40,17 +42,23 @@ public class OnboardingService {
     }
 
 
-    public String generateOnboardingUrl(UUID sellerId) {
+    public String generateOnboardingUrl(UUID sellerId, String redirectUrl) {
         if (sellerId == null)
             throw new IllegalArgumentException("sellerId is required");
 
+        if (redirectUrl == null || redirectUrl.isBlank())
+            throw new IllegalArgumentException("redirectUrl is required");
+
+        String stateJson = String.format("{\"sellerId\":\"%s\",\"redirectUrl\":\"%s\"}",
+                sellerId, redirectUrl);
+        String encodedState = Base64.getUrlEncoder().encodeToString(stateJson.getBytes(StandardCharsets.UTF_8));
 
         String url = UriComponentsBuilder.fromUriString(OnboardingConstants.STRIPE_AUTHORIZE_URI)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", stripeClientId)
                 .queryParam("scope", "read_write")
                 .queryParam("redirect_uri", OnboardingConstants.ONBOARDING_REDIRECT_URI)
-                .queryParam("state", sellerId)
+                .queryParam("state", encodedState)
                 .toUriString();
 
         return url;

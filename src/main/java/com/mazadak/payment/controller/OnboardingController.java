@@ -11,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -23,8 +24,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
+
+import static com.mazadak.payment.utils.OnboardingUtils.extractRedirectUrlFromState;
+import static com.mazadak.payment.utils.OnboardingUtils.extractSellerIdFromState;
 
 @Tag(name = "Stripe Onboarding", description = "APIs for handling Stripe Connect account onboarding")
 @RestController
@@ -55,16 +62,19 @@ public class OnboardingController {
     @PostMapping("/oauth/url")
     public ResponseEntity<Map<String, String>> getOAuthUrl(
             @RequestBody(
-                    description = "Payload containing the seller ID",
+                    description = "Payload containing the seller ID and redirect URL",
                     required = true,
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(type = "object", example = "{\"sellerId\": \"1254\"}"),
-                            examples = @ExampleObject(name = "Seller ID Example", value = "{\"sellerId\": \"UUID\"}")
-                    )) @org.springframework.web.bind.annotation.RequestBody Map<String, UUID> payload) {
-        return ResponseEntity.ok(Map.of("onboardingUrl", onboardingService.generateOnboardingUrl(payload.get("sellerId")).toString()));
-    }
+                            schema = @Schema(type = "object", example = "{\"sellerId\": \"1254\", \"redirectUrl\": \"https://yourapp.com/success\"}"),
+                            examples = @ExampleObject(name = "Request Example", value = "{\"sellerId\": \"UUID\", \"redirectUrl\": \"https://yourapp.com/success\"}")
+                    )) @org.springframework.web.bind.annotation.RequestBody Map<String, String> payload) {
 
+        UUID sellerId = UUID.fromString(payload.get("sellerId"));
+        String redirectUrl = payload.get("redirectUrl");
+
+        return ResponseEntity.ok(Map.of("onboardingUrl", onboardingService.generateOnboardingUrl(sellerId, redirectUrl).toString()));
+    }
 
     @Operation(summary = "Handle Stripe OAuth Callback",
             description = "Handles the callback from Stripe after a seller completes the OAuth process " +
@@ -83,15 +93,27 @@ public class OnboardingController {
                             examples = @ExampleObject(value = "{\"error\": \"Failed to connect Stripe account\"}")))
     })
     @GetMapping("/oauth/callback")
-    public ResponseEntity<String> getOAuthCallback(
+    public ResponseEntity<Void> getOAuthCallback(
             @RequestParam("code") String authorizationCode,
-            @RequestParam("state") UUID sellerId) {
+            @RequestParam("state") String encodedState) {
+
+        String stateJson = new String(Base64.getUrlDecoder().decode(encodedState), StandardCharsets.UTF_8);
+
+        UUID sellerId = extractSellerIdFromState(stateJson);
+        String redirectUrl = extractRedirectUrlFromState(stateJson);
 
         String connectedAccountId = onboardingService.handleOAuthCallback(authorizationCode, sellerId);
 
-        return ResponseEntity.ok(connectedAccountId);
-    }
+        URI redirectUri = UriComponentsBuilder.fromUriString(redirectUrl)
+                .queryParam("success", "true")
+                .queryParam("accountId", connectedAccountId)
+                .build()
+                .toUri();
 
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(redirectUri)
+                .build();
+    }
 
     @Operation(summary = "Get Stripe Account Id for certain Seller")
     @ApiResponses(value = {
