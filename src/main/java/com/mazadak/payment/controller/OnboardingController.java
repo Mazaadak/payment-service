@@ -1,16 +1,9 @@
 package com.mazadak.payment.controller;
 
-import com.mazadak.payment.constant.OnboardingConstants;
 import com.mazadak.payment.service.impl.OnboardingService;
 import com.mazadak.payment.service.impl.StripePaymentService;
-import com.stripe.Stripe;
-import com.stripe.exception.StripeException;
-import com.stripe.net.OAuth;
-import com.mazadak.payment.exception.StripeOAuthException;
-import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
