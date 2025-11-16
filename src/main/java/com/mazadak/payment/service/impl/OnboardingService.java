@@ -1,7 +1,7 @@
 package com.mazadak.payment.service.impl;
 
+import com.mazadak.common.exception.domain.payment.StripeOAuthException;
 import com.mazadak.payment.constant.OnboardingConstants;
-import com.mazadak.payment.exception.StripeOAuthException;
 import com.mazadak.payment.model.SellerStripeAccount;
 import com.mazadak.payment.repository.SellerStripeAccountRepository;
 import com.stripe.Stripe;
