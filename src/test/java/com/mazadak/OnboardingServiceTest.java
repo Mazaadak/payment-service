@@ -25,6 +25,8 @@ class OnboardingServiceTest {
     @InjectMocks
     private OnboardingService onboardingService;
 
+    private static final String TEST_REDIRECT_URL = "https://yourapp.com/success";
+
     @BeforeEach
     void setUp() {
         // Re-initialize the service with constructor arguments for each test
@@ -38,14 +40,15 @@ class OnboardingServiceTest {
     void generateOnboardingUrl_withValidSellerId_returnsCorrectUrl() {
         UUID sellerId = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-        String url = onboardingService.generateOnboardingUrl(sellerId);
+        String url = onboardingService.generateOnboardingUrl(sellerId, TEST_REDIRECT_URL);
 
         assertNotNull(url);
         assertTrue(url.startsWith("https://connect.stripe.com/oauth/authorize"));
         assertTrue(url.contains("client_id=test_client_id"));
         assertTrue(url.contains("scope=read_write"));
         assertTrue(url.contains("response_type=code"));
-        assertTrue(url.contains("state=seller123"));
+        assertTrue(url.contains("state="));
+        // The state parameter now contains Base64-encoded JSON with sellerId and redirectUrl
     }
 
     @Test
@@ -53,20 +56,31 @@ class OnboardingServiceTest {
         UUID sellerId = null;
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            onboardingService.generateOnboardingUrl(sellerId);
+            onboardingService.generateOnboardingUrl(sellerId, TEST_REDIRECT_URL);
         });
 
         assertEquals("sellerId is required", exception.getMessage());
     }
 
     @Test
-    void generateOnboardingUrl_withBlankSellerId_throwsIllegalArgumentException() {
+    void generateOnboardingUrl_withNullRedirectUrl_throwsIllegalArgumentException() {
         UUID sellerId = UUID.randomUUID();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            onboardingService.generateOnboardingUrl(sellerId);
+            onboardingService.generateOnboardingUrl(sellerId, null);
         });
 
-        assertEquals("sellerId is required", exception.getMessage());
+        assertEquals("redirectUrl is required", exception.getMessage());
+    }
+
+    @Test
+    void generateOnboardingUrl_withBlankRedirectUrl_throwsIllegalArgumentException() {
+        UUID sellerId = UUID.randomUUID();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            onboardingService.generateOnboardingUrl(sellerId, "   ");
+        });
+
+        assertEquals("redirectUrl is required", exception.getMessage());
     }
 }
